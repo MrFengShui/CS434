@@ -12,3 +12,5 @@ to see the code used to produce the plots we have in the report.
 
 NOTE: The program does not take in any input as arguments. It does however need to read in the
 housing_train.txt and housing_test.txt files, as they contain the housing market data.
+
+Assignment_One_Final.html is a file of the Jupyter notebook at we used for inital development.
