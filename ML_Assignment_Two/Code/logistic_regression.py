@@ -130,7 +130,7 @@ X_test = np.concatenate((dummy_test, raw_test), axis=1)
 print 'Beginning part one...\r\n'
 
 # Experimenting with different learning rates
-learning_rates = np.linspace(0,0.1,100)
+learning_rates = np.linspace(0.0,0.001,100)
 ctr_tally = []
 acc_tally = []
 
@@ -139,8 +139,8 @@ for i in learning_rates:
     ctr_tally.append(ctr)
     acc_tally.append(accuracy)
 	
-print 'Learning rates:\r\n %s' % learning_rates
-print '\r\nEpoch count:\r\n %s' % ctr_tally
+
+print 'Epoch count for each learning rate:\r\n %s' % ctr_tally
 
 ## PART 2
 print '\r\nBeginning part two...\r\n'
