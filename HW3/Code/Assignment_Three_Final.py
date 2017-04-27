@@ -1,29 +1,10 @@
-
-# coding: utf-8
-
-# In[1]:
-
-# Plotting library
-import matplotlib.pyplot as plt
-import matplotlib.image as mpimg
-from matplotlib import gridspec
-
 # Numerical Library
 import numpy as np
 from numpy import genfromtxt
 import collections, math, operator
-
 from scipy.special import expit
-
 # Limit printout to 3 decimal places
 np.set_printoptions(precision=3,suppress=True)
-
-# Allows for printing inline for jupyter notebook
-get_ipython().magic('matplotlib inline')
-
-
-# In[2]:
-
 ## Part 1
 DistanceFlagPair = collections.namedtuple('Distance', 'distance flag')
 
@@ -76,18 +57,7 @@ def func_cross_valid_error(data, knn, k = 1):
         error += flag_error
     return float(error) / (len(data.flag_data) + 1) 
 
-
-# In[3]:
-
-def func_plot_data(x_list, y_list, label):
-    fig = plt.figure(figsize=(9,6))
-    plt.plot(x_list, y_list, label=label)
-#     plt.legend()
-    fig.suptitle(label + ' Error', fontsize=16)
-    plt.xlabel('K-Value', fontsize=16)
-    plt.ylabel('Error', fontsize=16)
-    
-if __name__ == '__main__':
+def func_part_one():
     train_data, test_data = DataFormat('knn_train.csv'), DataFormat('knn_test.csv')
     train_norm_data, train_flag_data = train_data.func_norm_data()
     test_norm_data, test_flag_data = test_data.func_norm_data()
@@ -102,16 +72,8 @@ if __name__ == '__main__':
         test_error_list.append(test_error)
 
     print 'Training:', train_error_list
-    func_plot_data(k_list, train_error_list, 'Training Data')
-    
     print 'Cross Valid:', cross_valid_list
-    func_plot_data(k_list, cross_valid_list, 'Cross Validation')
-    
     print 'Testing:', test_error_list    
-    func_plot_data(k_list, test_error_list, 'Testing Data')
-
-
-# In[ ]:
-
-
-
+   
+if __name__ == '__main__':
+    func_part_one()
