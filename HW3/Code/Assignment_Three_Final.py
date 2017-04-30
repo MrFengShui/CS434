@@ -1,9 +1,8 @@
-# Numerical Library
 import numpy as np
 from numpy import genfromtxt
 import collections, math, operator
 from scipy.special import expit
-# Limit printout to 3 decimal places
+
 np.set_printoptions(precision=3,suppress=True)
 ## Part 1
 DistanceFlagPair = collections.namedtuple('Distance', 'distance flag')
@@ -15,13 +14,20 @@ class DataFormat():
 
     def __init__(self, name = None, norm_data = None, flag_data = None):
         self.name = name
-        self.norm_data = np.array(norm_data)
-        self.flag_data = np.array(flag_data)
+        if norm_data and flag_data:
+            self.norm_data = np.array(norm_data)
+            self.flag_data = np.array(flag_data)
+        else:
+            self.norm_data = norm_data
+            self.flag_data = flag_data
 
-    def data_set(self):
-        return genfromtxt(self.name, delimiter=',')
+    def func_data_set(self):
+        src_data = genfromtxt(self.name, delimiter=',')
+        flag_data = src_data[:,0]
+        feature_data = np.delete(src_data, 0, axis=1)
+        return feature_data, flag_data
 
-    def norm_flag_data(self):
+    def func_norm_data(self):
         src_data = genfromtxt(self.name, delimiter=',')
         flag_data, feature_data = src_data[:,0], np.delete(src_data, 0, axis=1)
         feature_max, feature_min = np.amax(feature_data, axis=0), np.amin(feature_data, axis=0)
@@ -30,7 +36,7 @@ class DataFormat():
         self.norm_data, self.flag_data = norm_data, flag_data
         return norm_data, flag_data
 
-    def leave_out(self, index):
+    def func_leave_out(self, index):
         return self.norm_data[index], self.flag_data[index]
 
 class KNN():
@@ -59,7 +65,7 @@ def func_calc_error(data, knn, k = 1):
 def func_cross_valid_error(data, knn, k = 1):
     error = 0
     for i in range(len(data.norm_data)):
-        norm, flag = data.leave_out(i)
+        norm, flag = data.func_leave_out(i)
         flag_sum = knn.func_classify(norm, k)
         flag_error = np.abs(flag - flag_sum) / 2
         error += flag_error
@@ -88,9 +94,9 @@ class DecisionStump():
         row_count, col_count = self.norm_data.shape
         upper_pos_count, upper_neg_count, lower_pos_count, lower_neg_count = self.count_one(index, value)
         upper_entropy = func_calc_entropy(upper_pos_count, upper_neg_count)
-        upper_entropy = float(upper_pos_count + upper_neg_count) * upper_entropy / row_count
+        upper_entropy = float(upper_pos_count + upper_neg_count) / row_count * upper_entropy
         lower_entropy = func_calc_entropy(lower_pos_count, lower_neg_count)
-        lower_entropy = float(lower_pos_count + lower_neg_count) * lower_entropy / row_count
+        lower_entropy = float(lower_pos_count + upper_neg_count) / row_count * lower_entropy
         return init_entropy - upper_entropy - lower_entropy
 
     def count_one(self, index, value):
@@ -115,32 +121,25 @@ class DecisionStump():
             else: false += 1
         return float(true) / (true + false)
 
-class TreeNode():
-
-    def __init__(self, column = -1, value = None, rs = None, left = None, right = None):
-        self.column, self.value = column, value
-        self.rs, self.left, self.right = rs, left, righ
-
 class DecisionTree():
 
     def __init__(self, norm_data, flag_data, depth, height):
         self.norm_data, self.flag_data = norm_data, flag_data
         self.depth, self.height = depth, height
+        self.predict = np.sum(flag_data)
         self.cur_info_gain, self.feature_num, self.split_num = 0, 0, 0
         if depth > 0:
-            self.cur_info_gain, self.feature_num, self.split_num = self.format_data()
+            self.cur_info_gain, self.feature_num, self.split_num = self.build_stump()
             if self.cur_info_gain > 0:
                 data_left, data_right = self.split_data(self.norm_data, self.flag_data, self.feature_num, self.split_num)
-                #LHS
                 left_norm_data, left_flag_data = data_left.norm_data, data_left.flag_data
                 self.left_child = DecisionTree(left_norm_data, left_flag_data, self.depth - 1, self.height + 1)
-                #RHS
                 right_norm_data, right_flag_data = data_right.norm_data, data_right.flag_data
                 self.right_child = DecisionTree(right_norm_data, right_flag_data, self.depth - 1, self.height + 1)
             else:
                 self.depth = 0
 
-    def format_data(self):
+    def build_stump(self):
         row, col = self.norm_data.shape
         cur_info_gain, feature_num, split_num = 0, 0, 0
         for index in range(col):
@@ -152,16 +151,15 @@ class DecisionTree():
         return cur_info_gain, feature_num, split_num
 
     def split_data(self, norm_data, flag_data, feature_num, split_num):
-        row, col = norm_data.shape
         left_norm, left_flag = [], []
         right_norm, right_flag = [], []
-        for i in range(col):
+        for i in range(len(norm_data)):
             item_data = norm_data[i]
-            if item_data[i] > split_num:
-                right_norm.append(item_data[i])
+            if item_data[feature_num] > split_num:
+                right_norm.append(item_data)
                 right_flag.append(flag_data[i])
             else:
-                left_norm.append(item_data[i])
+                left_norm.append(item_data)
                 left_flag.append(flag_data[i])
         return DataFormat(norm_data = left_norm, flag_data = left_flag), DataFormat(norm_data = right_norm, flag_data = right_flag)
 
@@ -190,23 +188,31 @@ class DecisionTree():
                 else: lower_neg_count += 1
         return upper_pos_count, upper_neg_count, lower_pos_count, lower_neg_count
 
-    def calc_error_rate(self, feature_num, split_num):
+    def calc_error_rate(self, norm_data):
         predict, true, false = 0, 0, 0
-        for i in range(len(self.norm_data)):
-            predict = -1 if self.norm_data[i][feature_num] < split_num else 1
-            if predict == self.flag_data[i]: true += 1
+        for i in range(len(norm_data)):
+            predict = self.calc_predict(norm_data[i])
+            if predict > 0: true += 1
             else: false += 1
         return float(true) / (true + false)
 
+    def calc_predict(self, norm_data):
+        if self.depth > 0:
+            return self.right_child.calc_predict(norm_data) if norm_data[self.feature_num] > self.split_num else self.left_child.calc_predict(norm_data)
+        else:
+            return 1 if self.predict > 0 else -1
+
     def print_tree(self):
         if self.depth > 0:
-            print '+' * self.height, self.feature_num, self.split_num
+            print '|+++' * self.height + 'Feature:', self.feature_num, 'Split', self.split_num
             self.left_child.print_tree()
-            print '+' * self.height, self.feature_num, self.split_num
+            print '|+++' * self.height + 'Feature:', self.feature_num, 'Split', self.split_num
             self.right_child.print_tree()
-            print '+' * self.height, self.cur_info_gain
+            print '|***' * self.height + 'Information Gain', self.cur_info_gain
         else:
-            print None
+            if self.predict > 0: print '|---' * self.height + 'Positive'
+            elif self.predict < 0: print '|---' * self.height + 'Negative'
+            else: print '|---' * self.height + 'Unpredictable'
 
 def func_count_one(flag_data):
     pos, neg = 0, 0
@@ -223,13 +229,20 @@ def func_calc_entropy(pos, neg):
     except ZeroDivisionError:
         return 0
 
-## Main Part
+def func_plot_data(fig, x_list, y_list, label, title='Training-Testing Data'):
+    plt.plot(x_list, y_list, label=label)
+    plt.legend()
+    fig.suptitle(title + ' Error', fontsize=16)
+    plt.xlabel('K-Value', fontsize=16)
+    plt.ylabel('Error', fontsize=16)
+
 def func_part_one():
     train_data, test_data = DataFormat('knn_train.csv'), DataFormat('knn_test.csv')
-    train_norm_data, train_flag_data = train_data.norm_flag_data()
-    test_norm_data, test_flag_data = test_data.norm_flag_data()
+    train_norm_data, train_flag_data = train_data.func_norm_data()
+    test_norm_data, test_flag_data = test_data.func_norm_data()
     knn_train, knn_test = KNN(train_norm_data, train_flag_data), KNN(test_norm_data, test_flag_data)
     k_list, train_error_list, cross_valid_list, test_error_list = range(1, 52, 2), [], [], []
+
     for k in k_list:
         train_error = func_calc_error(train_data, knn_train, k)
         train_error_list.append(train_error)
@@ -239,32 +252,42 @@ def func_part_one():
         test_error_list.append(test_error)
 
     print 'Training:', train_error_list
-    print 'Cross Valid:', cross_valid_list
     print 'Testing:', test_error_list
+    print 'Cross Valid:', cross_valid_list
 
 def func_part_two():
     train_data, test_data = DataFormat('knn_train.csv'), DataFormat('knn_test.csv')
-    train_norm_data, train_flag_data = train_data.norm_flag_data()
-    test_norm_data, test_flag_data = test_data.norm_flag_data()
-    ''' Decision Stump '''
-    # train_stump, test_stump = DecisionStump(train_norm_data, train_flag_data), DecisionStump(test_norm_data, test_flag_data)
-    # train_info_gain, train_feature, train_split = train_stump.build_stump()
-    # test_info_gain, test_feature, test_split = test_stump.build_stump()
-    # # Training Data Outputs
-    # print 'Training Information Gain Value:', train_info_gain
-    # print 'Training Feature Value:', train_feature
-    # # print 'Training Splitted Value:', train_split
-    # print 'Training Error Rate:', train_stump.calc_error_rate(train_feature, train_split)
-    # print
-    # # Testing Data outputs
-    # print 'Testing Information Gain Value:', test_info_gain
-    # print 'Testing Feature Value:', test_feature
-    # # print 'Testing Splitted Value:', test_split
-    # print 'Testing Error Rate:', test_stump.calc_error_rate(test_feature, test_split)
-    ''' Decision Tree '''
+    train_norm_data, train_flag_data = train_data.func_norm_data()
+    test_norm_data, test_flag_data = test_data.func_norm_data()
+    print '-' * 25, 'Learning Decision Stump', '-' * 25
+    train_stump, test_stump = DecisionStump(train_norm_data, train_flag_data), DecisionStump(test_norm_data, test_flag_data)
+    train_info_gain, train_feature, train_split = train_stump.build_stump()
+    test_info_gain, test_feature, test_split = test_stump.build_stump()
+    print '+' * 20, 'Training Data', '+' * 20
+    print 'Training Information Gain Value:', train_info_gain
+    print 'Training Feature Value:', train_feature
+#     print 'Training Splitted Value:', train_split
+    print 'Training Error Rate:', train_stump.calc_error_rate(train_feature, train_split)
+    print '*' * 20, 'Testing Data', '*' * 20
+    print 'Testing Information Gain Value:', test_info_gain
+    print 'Testing Feature Value:', test_feature
+#     print 'Testing Splitted Value:', test_split
+    print 'Testing Error Rate:', test_stump.calc_error_rate(test_feature, test_split)
+    print '-' * 25, 'Learning Decision Tree', '-' * 25
     train_tree = DecisionTree(train_norm_data, train_flag_data, 5, 0)
+    test_tree = DecisionTree(test_norm_data, test_flag_data, 5, 0)
+    print '*' * 20, 'Training Data', '*' * 20
     train_tree.print_tree()
+    print 'Training Error Rate:', train_tree.calc_error_rate(train_norm_data)
+    print '*' * 20, 'Testing Data', '*' * 20
+    test_tree.print_tree()
+    print 'Testing Error Rate:', test_tree.calc_error_rate(test_norm_data)
 
 if __name__ == '__main__':
-    # func_part_one()
+    print '#' * 25, 'Part I', '#' * 25
+    func_part_one()
+    print '#' * 25, 'Part II', '#' * 25
     func_part_two()
+
+
+# In[ ]:
