@@ -1,7 +1,11 @@
 import numpy as np
 import io
 
+<<<<<<< HEAD
 np.set_printoptions(precision=4)
+=======
+np.set_printoptions(precision=9)
+>>>>>>> 13236522490e9ed82753a42664a3fb46ac17812e
 
 def func_load_file(name):
     m, n = 0, 0
@@ -24,26 +28,46 @@ def func_load_file(name):
             else: break
     return n, m, reward, matrix
 
-def func_horizon_eval(mdp, vec, beta):
-    n = mdp.get_num_state()
-    I, T = np.eye(n), np.zeros((n, n))
-    for state_idx in range(n):
-        T[state_idx, :] = mdp.get_trans_prob(state_idx, vec)
-    return np.dot(np.linalg.inv(I - beta * T), mdp.get_reward())
+def func_horizon_eval(mdp, policy, beta):
+    I, matrix = np.eye(mdp.num_state), np.zeros((mdp.num_state, mdp.num_state))
+    for state_idx in range(mdp.num_state):
+        matrix[state_idx, :] = mdp.get_trans_prob(policy[state_idx], state_idx)
+    return np.dot(np.linalg.inv(I - beta * matrix), mdp.get_reward())
 
+def func_policy_opt(mdp, beta):
+    policy = np.random.randint(0, mdp.num_action, (mdp.num_state,))
+    while True:
+        value = func_horizon_eval(mdp, policy, beta)
+        tmp_policy = func_calc_policy(value, mdp)
+        if np.all(policy == tmp_policy): break
+        policy = np.array(tmp_policy)
+    return value, policy
+
+def func_calc_policy(value, mdp):
+    policy = np.zeros(mdp.num_state, dtype = int)
+    for state_idx in range(mdp.num_state):
+        expects = [np.dot(mdp.get_trans_prob(action_idx, state_idx), value) for action_idx in range(mdp.num_action)]
+        policy[state_idx] = np.argmax(expects)
+    return policy
+
+<<<<<<< HEAD
 def func_value_iter(mdp, beta, epsilon = 0.001):
     curr_vec, vec = np.zeros((mdp.num_state,)), np.zeros((mdp.num_state,), dtype = int)
     prev_vec = np.array(curr_vec)
     for i in range(100000):
+=======
+def func_value_iter(mdp, beta, epsilon = 0.000001):
+    value, policy = np.zeros((mdp.num_state,)), np.zeros((mdp.num_state,), dtype = int)
+    prev_value = np.array(value)
+    for i in range(1000):
+>>>>>>> 13236522490e9ed82753a42664a3fb46ac17812e
         for state_idx in range(mdp.num_state):
-            expects = [np.dot(mdp.get_trans_prob(action_idx, state_idx), prev_vec) for action_idx in range(mdp.num_action)]
-            curr_vec[state_idx] = mdp.get_reward(state_idx) + beta * np.max(expects)
-        if np.linalg.norm(prev_vec - curr_vec, ord = np.inf) < epsilon: break
-        prev_vec = np.array(curr_vec)
-    for state_idx in range(mdp.num_state):
-        expects = [np.dot(mdp.get_trans_prob(action_idx, state_idx), curr_vec) for action_idx in range(mdp.num_action)]
-        vec[state_idx] = np.argmax(expects)
-    return curr_vec, vec
+            expects = [np.dot(mdp.get_trans_prob(action_idx, state_idx), prev_value) for action_idx in range(mdp.num_action)]
+            value[state_idx] = mdp.get_reward(state_idx) + beta * np.max(expects)
+        if np.linalg.norm(prev_value - value, ord = np.inf) < epsilon: break
+        prev_value = np.array(value)
+    policy = func_calc_policy(value, mdp)
+    return value, policy
 
 class MDP:
 
@@ -58,8 +82,13 @@ class MDP:
 
 if __name__ == '__main__':
     mdp = MDP('MDP1.txt')
+    print '========== MDP Value Iteration =========='
     for beta in np.arange(0.1, 1.0, 0.1):
-        vec, proc = func_value_iter(mdp, beta)
-        print 'Beta:', beta, 'Vector:', vec, 'Process:', proc
+        value, proc = func_value_iter(mdp, beta)
+        print 'Beta:', beta, 'Value:', value, 'Process:', proc
+    print '========== MDP Policy Iteration =========='
+    for beta in np.arange(0.1, 1.0, 0.1):
+        value, proc = func_policy_opt(mdp, beta)
+        print 'Beta:', beta, 'Value:', value, 'Process:', proc
 
 # https://github.com/mqtlam/osu-cs533/tree/master/assignment3
