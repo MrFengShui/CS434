@@ -1,6 +1,8 @@
 import numpy as np
 import io
 
+np.set_printoptions(precision=4)
+
 def func_load_file(name):
     m, n = 0, 0
     with open(name, 'r') as file:
@@ -29,7 +31,7 @@ def func_horizon_eval(mdp, vec, beta):
         T[state_idx, :] = mdp.get_trans_prob(state_idx, vec)
     return np.dot(np.linalg.inv(I - beta * T), mdp.get_reward())
 
-def func_value_iter(mdp, beta, epsilon = 0.000001):
+def func_value_iter(mdp, beta, epsilon = 0.001):
     curr_vec, vec = np.zeros((mdp.num_state,)), np.zeros((mdp.num_state,), dtype = int)
     prev_vec = np.array(curr_vec)
     for i in range(100000):
