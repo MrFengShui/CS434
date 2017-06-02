@@ -1,11 +1,7 @@
 import numpy as np
 import io
 
-<<<<<<< HEAD
 np.set_printoptions(precision=4)
-=======
-np.set_printoptions(precision=9)
->>>>>>> 13236522490e9ed82753a42664a3fb46ac17812e
 
 def func_load_file(name):
     m, n = 0, 0
@@ -50,17 +46,15 @@ def func_calc_policy(value, mdp):
         policy[state_idx] = np.argmax(expects)
     return policy
 
-<<<<<<< HEAD
 def func_value_iter(mdp, beta, epsilon = 0.001):
     curr_vec, vec = np.zeros((mdp.num_state,)), np.zeros((mdp.num_state,), dtype = int)
     prev_vec = np.array(curr_vec)
     for i in range(100000):
-=======
+
 def func_value_iter(mdp, beta, epsilon = 0.000001):
     value, policy = np.zeros((mdp.num_state,)), np.zeros((mdp.num_state,), dtype = int)
     prev_value = np.array(value)
     for i in range(1000):
->>>>>>> 13236522490e9ed82753a42664a3fb46ac17812e
         for state_idx in range(mdp.num_state):
             expects = [np.dot(mdp.get_trans_prob(action_idx, state_idx), prev_value) for action_idx in range(mdp.num_action)]
             value[state_idx] = mdp.get_reward(state_idx) + beta * np.max(expects)
@@ -81,7 +75,7 @@ class MDP:
         return self.reward if state_idx == None else self.reward[state_idx]
 
 if __name__ == '__main__':
-    mdp = MDP('MDP1.txt')
+    mdp = MDP('test-data-for-MDP-1.txt')
     print '========== MDP Value Iteration =========='
     for beta in np.arange(0.1, 1.0, 0.1):
         value, proc = func_value_iter(mdp, beta)
