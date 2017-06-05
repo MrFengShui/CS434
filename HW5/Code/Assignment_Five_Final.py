@@ -1,7 +1,7 @@
 import numpy as np
 import io
 
-np.set_printoptions(precision=4)
+np.set_printoptions(precision=10)
 
 def func_load_file(name):
     m, n = 0, 0
@@ -46,12 +46,7 @@ def func_calc_policy(value, mdp):
         policy[state_idx] = np.argmax(expects)
     return policy
 
-def func_value_iter(mdp, beta, epsilon = 0.001):
-    curr_vec, vec = np.zeros((mdp.num_state,)), np.zeros((mdp.num_state,), dtype = int)
-    prev_vec = np.array(curr_vec)
-    for i in range(100000):
-
-def func_value_iter(mdp, beta, epsilon = 0.000001):
+def func_value_iter(mdp, beta, epsilon = 0.0000001):
     value, policy = np.zeros((mdp.num_state,)), np.zeros((mdp.num_state,), dtype = int)
     prev_value = np.array(value)
     for i in range(1000):
