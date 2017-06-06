@@ -72,12 +72,18 @@ class MDP:
 if __name__ == '__main__':
     mdp = MDP('test-data-for-MDP-1.txt')
     print '========== MDP Value Iteration =========='
-    for beta in np.arange(0.1, 1.0, 0.1):
-        value, proc = func_value_iter(mdp, beta)
-        print 'Beta:', beta, 'Value:', value, 'Process:', proc
+    value, proc = func_value_iter(mdp, 0.1)
+    print 'Beta:', beta, 'Value:', value, 'Process:', proc
+    value, proc = func_value_iter(mdp, 0.9)
+    print 'Beta:', beta, 'Value:', value, 'Process:', proc
+    # for beta in np.arange(0.1, 1.0, 0.1):
+    #     value, proc = func_value_iter(mdp, beta)
+    #     print 'Beta:', beta, 'Value:', value, 'Process:', proc
     print '========== MDP Policy Iteration =========='
-    for beta in np.arange(0.1, 1.0, 0.1):
-        value, proc = func_policy_opt(mdp, beta)
-        print 'Beta:', beta, 'Value:', value, 'Process:', proc
-
-# https://github.com/mqtlam/osu-cs533/tree/master/assignment3
+    value, proc = func_policy_opt(mdp, 0.1)
+    print 'Beta:', beta, 'Value:', value, 'Process:', proc
+    value, proc = func_policy_opt(mdp, 0.9)
+    print 'Beta:', beta, 'Value:', value, 'Process:', proc
+    # for beta in np.arange(0.1, 1.0, 0.1):
+    #     value, proc = func_policy_opt(mdp, beta)
+    #     print 'Beta:', beta, 'Value:', value, 'Process:', proc
